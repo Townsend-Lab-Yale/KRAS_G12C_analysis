@@ -14,7 +14,7 @@ NCI_MAF_38 <- read.csv('input_data/NCI/gdc_download_20170919_153409/81ccaef3-455
 
 # Convert NCI data to hg19, process, and save ----
 
-require("rtracklayer")
+require(rtracklayer)
 source("R/hg38_to_hg19_converter.R")
 source("R/unique_tumor_addition.R")
 source("R/flip_function.R")
@@ -71,6 +71,53 @@ write.table(MAF_for_analysis,file='output_data/MAF_LUAD.txt',quote = F,sep='\t',
 save(isoforms,file='output_data/Isoforms_LUAD.RData')
 
 
+# Determine trinucleotide profile ---- 
+
+source("R/trinuc_profile.R")
+require(ggplot2)
+require(reshape2)
+tumor.name <- "LUAD"
+
+load("output_data/MAF_LUAD.RData")
+
+trinuc.mutation_data <- trinuc.profile.function(input.MAF = MAF_for_analysis,save.figs=T)
+
+save(trinuc.mutation_data,file='output_data/trinuc_data_LUAD.RData')
+
+
+# Calculating mutation rates with MutSigCV ----
+
+###
+# Download MutSigCV 1.41 from http://archive.broadinstitute.org/cancer/cga/mutsig_download
+# Add the following lines within MutSigCV.m and run
+# Outputs *.gene_rates.txt and *.overall_rates.txt, which we use to calculate mutation rate within genes
+###
+
+# %ADDED AT LINE 953 (MutSigCV.m):
+#   G_rates = rmfield(G,{'expr','reptime','hic'});
+# G_rates.r_x_X = G_rates.x ./ G_rates.X;
+# G_rates.r_n_N = (G_rates.n_silent + G_rates.n_noncoding + G_rates.n_nonsilent) ./ (G_rates.N_silent + G_rates.N_noncoding + G_rates.N_nonsilent);
+# G_rates.r_nns_Nns = (G_rates.n_nonsilent) ./ (G_rates.N_nonsilent);
+# G_rates.r_ns_Ns = (G_rates.n_silent) ./ (G_rates.N_silent);
+# G_rates.r_nnc_Nnc = (G_rates.n_noncoding) ./ (G_rates.N_noncoding);
+# save_struct(G_rates, 'gene_rates.txt');
+# %save(rate_file,'G_rates')
+# 
+# r_all = sum(G.n_silent + G.n_noncoding + G.n_nonsilent)/sum(G.N_silent + G.N_noncoding + G.N_nonsilent);
+# r_silent = sum(G.n_silent)/sum(G.N_silent);
+# r_nonsilent = sum(G.n_nonsilent)/sum(G.N_nonsilent);
+# r_silent_noncoding = sum(G.n_silent + G.n_noncoding)/sum(G.N_silent + G.N_noncoding);
+# r_x_X_min = min(G_rates.r_x_X(G_rates.r_x_X>0));
+# r_x_X_max = max(G_rates.r_x_X);
+# 
+# rateId = fopen('overall_rates.txt', 'w');
+# fprintf(rateId,'Overall mutation rate:\t%e\n',r_all);
+# fprintf(rateId,'Silent mutation rate:\t%e\n',r_silent);
+# fprintf(rateId,'Nonsilent mutation rate:\t%e\n',r_nonsilent);
+# fprintf(rateId,'Silent+noncoding rate:\t%e\n',r_silent_noncoding);
+# fprintf(rateId,'Min non-zero x/X:\t%e\n',r_x_X_min);
+# fprintf(rateId,'Max x/X:\t%e\n',r_x_X_max);
+# fclose(rateId);
 
 
 
