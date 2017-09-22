@@ -2,6 +2,8 @@
 # Analysis performed in the manuscript Cannataro et al., The likelihood of heterogeneity or additional mutation in KRAS or associated oncogenes to compromise targeting of oncogenic KRAS G12C
 ###
 
+dir.create("output_data")
+
 
 # Import NCI data ----
 # File Properties
@@ -89,6 +91,8 @@ save(trinuc.mutation_data,file='output_data/trinuc_data_LUAD.RData')
 
 
 # Calculating mutation rates with MutSigCV ----
+
+dir.create("MutSigCV") #Download and unzip MutSigCV 1.41 here 
 
 ###
 # Download MutSigCV 1.41 from http://archive.broadinstitute.org/cancer/cga/mutsig_download
