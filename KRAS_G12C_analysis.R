@@ -90,6 +90,30 @@ trinuc.mutation_data <- trinuc.profile.function(input.MAF = MAF_for_analysis,sav
 save(trinuc.mutation_data,file='output_data/trinuc_data_LUAD.RData')
 
 
+load("output_data/trinuc_data_LUAD.RData")
+
+p <- ggplot(data=trinuc.mutation_data, aes(Downstream, Upstream)) +
+  geom_tile(aes(fill = proportion*100), colour = "white") + scale_fill_gradient(low = "white", high = "steelblue", name="Percent")
+p <- p + facet_grid(.~section_labels, labeller = label_parsed) 
+p <- p +  geom_text(aes(label = round(proportion, 4)*100),size=3)
+# p <- p + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+# panel.background = element_blank(), axis.line = element_line(colour = "black"))
+p <- p + theme_bw() + theme(panel.grid.major = element_blank(),
+                            panel.grid.minor = element_blank(),
+                            axis.ticks = element_blank(),
+                            strip.text=element_text(size=15),
+                            axis.title.x = element_text(size=15),
+                            axis.title.y = element_text(size=15),
+                            axis.text.x = element_text(size=12),
+                            axis.text.y=element_text(size=12),plot.title = element_text(hjust = 0.5)) 
+  # ggtitle(paste("Trinucleotide profile for ",tumor.name,sep=""))
+p
+ggsave(paste("figures/",tumor.name,"_trinuc_heatmap_noname.pdf",sep=""),height = 2.5,width = 10)
+
+
+
+
+
 # Calculating mutation rates with MutSigCV ----
 
 dir.create("MutSigCV") #Download and unzip MutSigCV 1.41 here 
@@ -203,7 +227,7 @@ p <- p + scale_y_continuous(labels=fancy_scientific)
 p <- p + geom_text(aes(label=round(value*1e6,2)), vjust=-0.2, position=position_dodge(width=0.9),size=5)
 p <- p + geom_text(aes(label=variable,y=-1e-7),position=position_dodge(width = 0.9),size=5)
 p <- p + xlab("Nucleotide position")
-p <- p + ylab("Mutation rate from tumorigenesis to resection")
+p <- p + ylab("Mutation rate")
 p <- p + scale_fill_discrete(name="Mutation")
 p <- p + theme(axis.text.x= element_text(size=15))
 p <- p + theme(axis.text.y= element_text(size=15))
@@ -436,7 +460,7 @@ KRAS.no.mut.output <- selection.intensity.calculation.function(genes_for_analysi
 save(KRAS.no.mut.output,file = "output_data/KRAS_NO_mutation_output.RData")
 
 
-
+load("output_data/KRAS_NO_mutation_output.RData")
 targeted_mut <- c("KRAS","G",12,"C")
 
 mutation.data <- KRAS.no.mut.output$complete_mutation_data
@@ -477,7 +501,7 @@ g.mid <- ggplot(selection.subset.ordered,aes(x=1,y=Name)) +
   geom_text(aes(label=Name),size=5, fontface = "bold") +
   # geom_segment(aes(x=0.94,xend=0.96,yend=Name)) +
   # geom_segment(aes(x=1.04,xend=1.065,yend=Name)) +
-  ggtitle("") +
+  labs(title=" ",subtitle=" ") +# ggtitle("") +
   ylab(NULL) + 
   scale_x_continuous(expand=c(0,0),limits=c(0.94,1.065)) +
   theme(axis.title=element_blank(),
@@ -487,11 +511,12 @@ g.mid <- ggplot(selection.subset.ordered,aes(x=1,y=Name)) +
         panel.background=element_blank(),
         axis.text.x=element_text(color=NA,size=12),
         axis.ticks.x=element_line(color=NA),
-        plot.margin = unit(c(1,-1,1,-1), "mm"))
+        plot.margin = unit(c(1,-1,1,-1), "mm")) + theme(plot.title = element_text(hjust = 0, face="bold",size=30),
+                                                        plot.subtitle = element_text(size=25,hjust=0.5))
 g.mid
 
 g1 <- ggplot(data=selection.subset.ordered,aes(x=Name,y=mu,fill=Gene)) +
-  geom_bar(stat="identity") + ggtitle("Mutation rate from tumorigenesis to resection") +
+  geom_bar(stat="identity") + labs(title="A",subtitle="Mutation rate") +#ggtitle("Mutation rate from tumorigenesis to resection") +
   theme(axis.title.x = element_blank(), 
         axis.title.y = element_blank(), 
         axis.text.y = element_blank(), 
@@ -502,7 +527,8 @@ g1 <- ggplot(data=selection.subset.ordered,aes(x=Name,y=mu,fill=Gene)) +
   theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
   geom_text(aes(label=round(mu*1e6,2)), vjust=-0.5, hjust=0.5, position=position_dodge(width=0.9),size=4,angle=90) +
   geom_text(aes(label=freq,y=-0.5e-7), position=position_dodge(width=0),size=5,angle=0,color="black") +
-  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0, face="bold",size=30),
+        plot.subtitle = element_text(size=25,hjust=0.5)) +
   theme(legend.position = 'none',axis.text.x = element_text(size=12)) +
   scale_y_reverse(labels=fancy_scientific) + coord_flip() 
 g1
@@ -510,14 +536,16 @@ g1
 # levels(selection.subset.ordered$Gene)
 
 g2 <- ggplot(data=selection.subset.ordered, aes(x=Name,y=gamma_epistasis,fill=Gene)) +
-  geom_bar(stat="identity") + ggtitle("Selection intensity") +
+  geom_bar(stat="identity") + labs(title="B",subtitle="Selection intensity") +# ggtitle("Selection intensity") +
   theme(axis.title.x = element_blank(), axis.title.y = element_blank(), 
         axis.text.y = element_blank(), axis.ticks.y = element_blank(),
         plot.margin = unit(c(1,0,1,-1), "mm")) +
   theme(panel.background = element_blank()) +
   theme(panel.grid.major =element_line(color="lightgrey"),panel.grid.minor =element_line(color="lightgrey")) +
   theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
-  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(size=12)) +
+  theme(plot.title = element_text(hjust = 0, face="bold",size=30),
+        plot.subtitle = element_text(size=25,hjust=0.5),
+        axis.text.x = element_text(size=12)) +
   coord_flip() +
   theme(legend.position = c(0.75, .5),legend.text = element_text(size=12))
 g2
@@ -530,7 +558,7 @@ grid.arrange(gg1,gg.mid,gg2,ncol=3,widths=c(4.25/10,1/10,4.25/10))
 
 
 gg.combined <- arrangeGrob(gg1,gg.mid,gg2,ncol=3,widths=c(4/10,1.5/10,4/10))
-ggsave(gg.combined, filename = "figures/combined_mu_selection_plot.pdf",units = "in",height=7,width = 10)
+ggsave(gg.combined, filename = "figures/combined_mu_selection_plot_titles.pdf",units = "in",height=7,width = 10)
 
 
 
@@ -748,7 +776,7 @@ for(i in 1:length(unique(additional.muts.LUAD$Unique_patient_identifier))){
     delete.this.round <- T
     for(k in 1:length(table.1.rows)){
       if((table.1.matrix[table.1.rows[k],"Start"] <= this.aa.pos &
-           table.1.matrix[table.1.rows[k],"End"] >= this.aa.pos)){
+          table.1.matrix[table.1.rows[k],"End"] >= this.aa.pos)){
         delete.this.round <- F
       }
     }
@@ -784,6 +812,8 @@ for(i in 1:length(unique(additional.muts.COAD$Unique_patient_identifier))){
 COAD.muts
 
 # Number of tumors within each dataset
+
+load("output_data/PAAD_COAD_READ_LUAD_sequencing_data.RData")
 
 length(unique(LUAD.TCGA.YG$Unique_patient_identifier))
 length(grep(pattern = "TCGA-",x = unique(LUAD.TCGA.YG$Unique_patient_identifier)))
