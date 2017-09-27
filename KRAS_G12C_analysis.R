@@ -48,7 +48,7 @@ if(length(which(colnames(Yale_data)=="keep"))>0){
 load("output_data/MAF_NCI_19.RData")
 
 MAF_for_analysis <- merging.TCGA.and.Yale.MAF.data.function(NCI_data = NCI_MAF_19,
-                                                           Yale_data = Yale_data
+                                                            Yale_data = Yale_data
 )
 
 MAF_for_analysis <- unique.tumor.addition.function(MAF.file = MAF_for_analysis,non.TCGA.characters.to.keep = 'all',figures=T)
@@ -161,13 +161,19 @@ save(KRAS.mutation.output,file = "output_data/KRAS_mutation_output.RData")
 
 # Figure: nucleotide level mutation rates ---- 
 
+
+mutation.rates <- read.csv(file="MutSigCV/MutSigCV_1.41/gene_rates.txt",header = T,stringsAsFactors = F,sep="\t")
+message("Mutation rate of KRAS:");print(mutation.rates$r_x_X[which(mutation.rates$gene=="KRAS")])
+
+
+
 # run previous section, or
 load("output_data/KRAS_mutation_output.RData")
 
 require(reshape2)
 
 source("R/fancy_scientific_code.R") 
-       
+
 
 
 normalized.mut.matrix.df <- as.data.frame(matrix(data=0,nrow=ncol(KRAS.mutation.output$norm_mut),ncol=5))
@@ -313,11 +319,14 @@ plot(y=Downstream.mutation.output$all_mutations$freq[which(Downstream.mutation.o
 abline(lm(Downstream.mutation.output$all_mutations$freq[which(Downstream.mutation.output$all_mutations$freq>1)] ~ Downstream.mutation.output$all_mutations$mu[which(Downstream.mutation.output$all_mutations$freq>1)]),lwd=2,col="red")
 
 
+down.lm <- lm(Downstream.mutation.output$all_mutations$freq[which(Downstream.mutation.output$all_mutations$freq>1)] ~ Downstream.mutation.output$all_mutations$mu[which(Downstream.mutation.output$all_mutations$freq>1)])
+summary(down.lm)$r.squared
+
 message("Correlation test for Frequency vs. Mutation rate")
 cor.test(Downstream.mutation.output$all_mutations$mu[which(Downstream.mutation.output$all_mutations$freq>1)],Downstream.mutation.output$all_mutations$freq[which(Downstream.mutation.output$all_mutations$freq>1)])
 
 
-
+sum(Downstream.mutation.output$all_mutations$mu[which(Downstream.mutation.output$all_mutations$freq>1)])
 
 # Figure: mutation rate within KRAS and downstream ---- 
 
@@ -415,13 +424,13 @@ load("output_data/MAF_LUAD.RData")
 LUAD.maf <- MAF_for_analysis
 
 KRAS.no.mut.output <- selection.intensity.calculation.function(genes_for_analysis = c("KRAS"),
-                                                                 MAF_for_analysis = LUAD.maf,
-                                                                 this.substitution = c("not_a_gene",34,"T"),
-                                                                 trinuc.mutation_data = trinuc.mutation_data,
-                                                                 LabReference =  isoforms,
-                                                                 translations =  read.csv(file = "input_data/translations.csv",header = T,stringsAsFactors = F),
-                                                                 mut_rates = read.csv(file="MutSigCV/MutSigCV_1.41/gene_rates.txt",header = T,stringsAsFactors = F,sep="\t"),
-                                                                 low.mut = read.csv(file="MutSigCV/MutSigCV_1.41/overall_rates.txt",header = F,stringsAsFactors = F,sep="\t"),tumor.number = length(unique(LUAD.maf$Unique_patient_identifier)),mutsig_siggenes = read.csv(file="MutSigCV/MutSigCV_1.41/mutsig_output/.sig_genes.txt",header = T,stringsAsFactors = F,sep="\t"))
+                                                               MAF_for_analysis = LUAD.maf,
+                                                               this.substitution = c("not_a_gene",34,"T"),
+                                                               trinuc.mutation_data = trinuc.mutation_data,
+                                                               LabReference =  isoforms,
+                                                               translations =  read.csv(file = "input_data/translations.csv",header = T,stringsAsFactors = F),
+                                                               mut_rates = read.csv(file="MutSigCV/MutSigCV_1.41/gene_rates.txt",header = T,stringsAsFactors = F,sep="\t"),
+                                                               low.mut = read.csv(file="MutSigCV/MutSigCV_1.41/overall_rates.txt",header = F,stringsAsFactors = F,sep="\t"),tumor.number = length(unique(LUAD.maf$Unique_patient_identifier)),mutsig_siggenes = read.csv(file="MutSigCV/MutSigCV_1.41/mutsig_output/.sig_genes.txt",header = T,stringsAsFactors = F,sep="\t"))
 
 
 save(KRAS.no.mut.output,file = "output_data/KRAS_NO_mutation_output.RData")
@@ -522,4 +531,257 @@ grid.arrange(gg1,gg.mid,gg2,ncol=3,widths=c(4.25/10,1/10,4.25/10))
 
 gg.combined <- arrangeGrob(gg1,gg.mid,gg2,ncol=3,widths=c(4/10,1.5/10,4/10))
 ggsave(gg.combined, filename = "figures/combined_mu_selection_plot.pdf",units = "in",height=7,width = 10)
+
+
+
+
+
+# Checking if there are multiple KRAS mutations or downstream mutations within seqeuencing data----
+
+source("R/merging_TCGA_and_local_MAF.R")
+source("R/hg38_to_hg19_converter.R")
+require(rtracklayer)
+source("R/unique_tumor_addition.R")
+source("R/DNP_remover.R")
+source("R/flip_function.R")
+source("R/tumor_allele_add.R")
+# source("R/selection_intensity_calculation.R")
+
+# Download PAAD TCGA data: 
+# File Properties
+# Name	TCGA.PAAD.mutect.a2c08388-2be9-4124-83ba-ed8d686dd277.DR-7.0.somatic.maf.gz
+# Access	open
+# UUID	a2c08388-2be9-4124-83ba-ed8d686dd277
+
+# Obtain Yale-Gilead PAAD data
+
+# Download COAD TCGA data:
+# File Properties
+# Name	TCGA.COAD.mutect.853e5584-b8c3-4836-9bda-6e7e84a64d97.DR-7.0.somatic.maf.gz
+# Access	open
+# UUID	853e5584-b8c3-4836-9bda-6e7e84a64d97
+
+# Download READ TCGA data: 
+# File Properties
+# Name	TCGA.READ.mutect.c999f6ca-0b24-4131-bc53-1665948f8e3f.DR-7.0.somatic.maf.gz
+# Access	open
+# UUID	c999f6ca-0b24-4131-bc53-1665948f8e3f
+
+# Load in and process all data
+
+PAAD.TCGA <- read.csv(file = "input_data/PAAD/gdc_download_20170925_182341/a2c08388-2be9-4124-83ba-ed8d686dd277/TCGA.PAAD.mutect.a2c08388-2be9-4124-83ba-ed8d686dd277.DR-7.0.somatic.maf", skip=5, sep="\t",stringsAsFactors = F,header = T)
+PAAD.TCGA <- hg38.to.hg19.converter(chain='input_data/hg38Tohg19.chain',hg38_maf=PAAD.TCGA)
+PAAD.YG <- read.csv(file = "input_data/PAAD/mutationsTN_26_Pancreatic_Cancer_YG_data.maf",stringsAsFactors = F,header = T,sep = "\t")
+
+PAAD.TCGA.YG <- merging.TCGA.and.Yale.MAF.data.function(NCI_data = PAAD.TCGA,Yale_data = PAAD.YG)
+PAAD.TCGA.YG <- unique.tumor.addition.function(MAF.file = PAAD.TCGA.YG,non.TCGA.characters.to.keep = 'all')
+PAAD.TCGA.YG <- tumor.allele.adder(MAF = PAAD.TCGA.YG)
+
+
+
+
+COAD.TCGA <- read.csv(file="input_data/COAD/gdc_download_20170925_182443/853e5584-b8c3-4836-9bda-6e7e84a64d97/TCGA.COAD.mutect.853e5584-b8c3-4836-9bda-6e7e84a64d97.DR-7.0.somatic.maf",header = T,sep = "\t",stringsAsFactors = F,skip=5)
+COAD.TCGA <- hg38.to.hg19.converter(chain='input_data/hg38Tohg19.chain',hg38_maf=COAD.TCGA)
+COAD.TCGA <- unique.tumor.addition.function(MAF.file = COAD.TCGA,non.TCGA.characters.to.keep = 'all')
+COAD.TCGA <- tumor.allele.adder(MAF = COAD.TCGA)
+
+
+
+READ.TCGA <- read.csv(file="input_data/READ/gdc_download_20170925_182528/c999f6ca-0b24-4131-bc53-1665948f8e3f/TCGA.READ.mutect.c999f6ca-0b24-4131-bc53-1665948f8e3f.DR-7.0.somatic.maf",header = T,sep = "\t",stringsAsFactors = F,skip=5)
+READ.TCGA <- hg38.to.hg19.converter(chain='input_data/hg38Tohg19.chain',hg38_maf=READ.TCGA)
+READ.TCGA <- unique.tumor.addition.function(MAF.file = READ.TCGA,non.TCGA.characters.to.keep = 'all')
+READ.TCGA <- tumor.allele.adder(MAF = READ.TCGA)
+
+
+
+
+LUAD.TCGA <- read.csv('input_data/NCI/gdc_download_20170919_153409/81ccaef3-4550-494d-882c-895fb5a3de3b/TCGA.LUAD.mutect.81ccaef3-4550-494d-882c-895fb5a3de3b.DR-7.0.somatic.maf',stringsAsFactors=F,skip=5,header=T,sep='\t')
+LUAD.TCGA <- hg38.to.hg19.converter(chain='input_data/hg38Tohg19.chain',hg38_maf=LUAD.TCGA)
+LUAD.YG <- read.csv('input_data/YG/adc_inc_counts.txt',stringsAsFactors=F,header=T,sep='\t')
+if(length(which(colnames(LUAD.YG)=="keep"))>0){
+  LUAD.YG <- LUAD.YG[-which(LUAD.YG$keep==0),]
+}
+LUAD.TCGA.YG <- merging.TCGA.and.Yale.MAF.data.function(NCI_data = LUAD.TCGA,
+                                                        Yale_data = LUAD.YG)
+LUAD.TCGA.YG <- unique.tumor.addition.function(MAF.file = LUAD.TCGA.YG,non.TCGA.characters.to.keep = 'all')
+LUAD.TCGA.YG <- tumor.allele.adder(MAF = LUAD.TCGA.YG)
+
+
+save(PAAD.TCGA.YG,
+     COAD.TCGA,
+     READ.TCGA,
+     LUAD.TCGA.YG,
+     file="output_data/PAAD_COAD_READ_LUAD_sequencing_data.RData")
+
+# 21
+
+
+# Importing data in Table 1. 
+
+other.genes.Table1 <- c("KRAS",
+                        "ABL1",
+                        "AKT2",
+                        "BRAF",
+                        "EGFR",
+                        "FGFR1",
+                        "FGFR3",
+                        "HRAS",
+                        "JAK2",
+                        "MET",
+                        "NRAS",
+                        "PDGFRA",
+                        "PIK3CA")
+table.1.matrix <- matrix(data=NA,nrow=18,ncol=2)
+
+table.1.matrix[,1] <- c(249,
+                        16,
+                        598,
+                        757,
+                        123,
+                        363,
+                        59,
+                        9,
+                        607,
+                        137,
+                        55,
+                        4,
+                        1245,
+                        9,
+                        55,
+                        560,
+                        540,
+                        1038)
+
+table.1.matrix[,2] <- c(258,
+                        26,
+                        615,
+                        761,
+                        136,
+                        374,
+                        76,
+                        20,
+                        618,
+                        148,
+                        65,
+                        15,
+                        1256,
+                        20,
+                        67,
+                        572,
+                        551,
+                        1049)
+
+rownames(table.1.matrix) <- c("ABL1",
+                              "AKT2",
+                              "BRAF",
+                              "EGFR",
+                              "FGFR1",
+                              "FGFR3",
+                              "HRAS",
+                              "HRAS",
+                              "JAK2",
+                              "KRAS",
+                              "KRAS",
+                              "KRAS",
+                              "MET",
+                              "NRAS",
+                              "NRAS",
+                              "PDGFRA",
+                              "PIK3CA",
+                              "PIK3CA")
+
+colnames(table.1.matrix) <- c("Start","End")
+
+# Function to find if Table 1 mutations are present with KRAS G12C
+
+additional.mutations.function <- function(this.MAF,genes.to.check){
+  this.tumor.file <- this.MAF
+  additional.muts <- matrix(data = NA,nrow=1,ncol=ncol(this.tumor.file))
+  colnames(additional.muts) <- colnames(this.tumor.file)
+  for(i in 1:length(unique(this.tumor.file$Unique_patient_identifier))){
+    this.tumor <-  this.tumor.file[which(this.tumor.file$Unique_patient_identifier==unique(this.tumor.file$Unique_patient_identifier)[i]),]
+    if(length(which(this.tumor$Hugo_Symbol=="KRAS" & 
+                    this.tumor$Start_Position==25398285  & 
+                    this.tumor$Chromosome==12 &
+                    this.tumor$Tumor_allele=="A"))>0){ #This is the mutation that results in KRAS G12C
+      
+      #Skip if this was actually a DNP (and not KRAS G12C) 
+      if(length(which(this.tumor$Hugo_Symbol=="KRAS" & 
+                      this.tumor$Start_Position==25398284 & 
+                      this.tumor$Chromosome==12))>0){
+        next
+      }
+      # Need to store if any downstream or within-KRAS mutations
+      # If there is an additional mutation besides KRAS G12C... 
+      if(length(which(this.tumor$Hugo_Symbol %in% genes.to.check))>1){
+        additional.muts <- rbind(additional.muts,this.tumor[which(this.tumor$Hugo_Symbol %in% genes.to.check),])
+        
+      }
+    }
+    
+  }
+  if(nrow(additional.muts)>1){
+    additional.muts <- (additional.muts[which(additional.muts$Variant_Classification == "Missense_Mutation"),])
+  }
+  return(additional.muts[-1,])# get rid of initiating row 
+}
+
+# Check for relevant tumor types
+
+additional.muts.LUAD <- additional.mutations.function(this.MAF = LUAD.TCGA.YG,genes.to.check = other.genes.Table1)
+additional.muts.PAAD <- additional.mutations.function(this.MAF = PAAD.TCGA.YG,genes.to.check = other.genes.Table1)
+additional.muts.COAD <- additional.mutations.function(this.MAF = COAD.TCGA,genes.to.check = other.genes.Table1)
+additional.muts.READ <- additional.mutations.function(this.MAF = READ.TCGA,genes.to.check = other.genes.Table1)
+
+
+# unique(additional.muts.LUAD$Unique_patient_identifier)
+
+# Distil into easy to read lists
+
+LUAD.muts <- list()
+for(i in 1:length(unique(additional.muts.LUAD$Unique_patient_identifier))){
+  LUAD.muts[[i]] <- additional.muts.LUAD[which(additional.muts.LUAD$Unique_patient_identifier==unique(additional.muts.LUAD$Unique_patient_identifier)[i]),c("Unique_patient_identifier","Hugo_Symbol","HGVSc","HGVSp","HGVSp_Short","Variant_Classification","Variant_Type")] 
+  to.delete <- NULL
+  for(j in 1:nrow(LUAD.muts[[i]])){
+    this.aa.pos <- as.numeric(unlist(gsub("[^0-9]", "", unlist(LUAD.muts[[i]][j,]$HGVSp_Short)), ""))
+    table.1.rows <- which(rownames(table.1.matrix)==LUAD.muts[[i]][j,"Hugo_Symbol"])
+    delete.this.round <- T
+    for(k in 1:length(table.1.rows)){
+      if((table.1.matrix[table.1.rows[k],"Start"] <= this.aa.pos &
+           table.1.matrix[table.1.rows[k],"End"] >= this.aa.pos)){
+        delete.this.round <- F
+      }
+    }
+    if(delete.this.round){to.delete <- c(to.delete,j)}
+  }
+  
+  if(length(to.delete)>0){LUAD.muts[[i]] <- LUAD.muts[[i]][-to.delete,]}
+  
+}
+LUAD.muts
+
+
+COAD.muts <- list()
+for(i in 1:length(unique(additional.muts.COAD$Unique_patient_identifier))){
+  COAD.muts[[i]] <- additional.muts.COAD[which(additional.muts.COAD$Unique_patient_identifier==unique(additional.muts.COAD$Unique_patient_identifier)[i]),c("Unique_patient_identifier","Hugo_Symbol","HGVSc","HGVSp","HGVSp_Short","Variant_Classification","Variant_Type")] 
+  to.delete <- NULL
+  for(j in 1:nrow(COAD.muts[[i]])){
+    this.aa.pos <- as.numeric(unlist(gsub("[^0-9]", "", unlist(COAD.muts[[i]][j,]$HGVSp_Short)), ""))
+    table.1.rows <- which(rownames(table.1.matrix)==COAD.muts[[i]][j,"Hugo_Symbol"])
+    delete.this.round <- T
+    for(k in 1:length(table.1.rows)){
+      if((table.1.matrix[table.1.rows[k],"Start"] <= this.aa.pos &
+          table.1.matrix[table.1.rows[k],"End"] >= this.aa.pos)){
+        delete.this.round <- F
+      }
+    }
+    if(delete.this.round){to.delete <- c(to.delete,j)}
+  }
+  
+  if(length(to.delete)>0){COAD.muts[[i]] <- COAD.muts[[i]][-to.delete,]}
+  
+}
+COAD.muts
+
+
 
