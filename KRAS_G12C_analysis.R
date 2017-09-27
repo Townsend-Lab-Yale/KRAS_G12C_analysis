@@ -783,5 +783,18 @@ for(i in 1:length(unique(additional.muts.COAD$Unique_patient_identifier))){
 }
 COAD.muts
 
+# Number of tumors within each dataset
+
+length(unique(LUAD.TCGA.YG$Unique_patient_identifier))
+length(grep(pattern = "TCGA-",x = unique(LUAD.TCGA.YG$Unique_patient_identifier)))
+length(unique(LUAD.TCGA.YG$Unique_patient_identifier)) - length(grep(pattern = "TCGA-",x = unique(LUAD.TCGA.YG$Unique_patient_identifier)))
+
+length(unique(PAAD.TCGA.YG$Unique_patient_identifier))
+length(grep(pattern = "TCGA-",x = unique(PAAD.TCGA.YG$Unique_patient_identifier)))
+length(unique(PAAD.TCGA.YG$Unique_patient_identifier)) - length(grep(pattern = "TCGA-",x = unique(PAAD.TCGA.YG$Unique_patient_identifier)))
+
+length(unique(COAD.TCGA$Unique_patient_identifier))
+
+length(unique(READ.TCGA$Unique_patient_identifier))
 
 
