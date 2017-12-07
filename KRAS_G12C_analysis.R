@@ -229,10 +229,10 @@ p <- p + geom_text(aes(label=variable,y=-1e-7),position=position_dodge(width = 0
 p <- p + xlab("Nucleotide position")
 p <- p + ylab("Mutation rate")
 p <- p + scale_fill_discrete(name="Mutation")
-p <- p + theme(axis.text.x= element_text(size=15))
-p <- p + theme(axis.text.y= element_text(size=15))
-p <- p + theme(axis.title.y = element_text(size = 18, angle = 90))
-p <- p + theme(axis.title.x = element_text(size = 18, angle = 00))
+p <- p + theme(axis.text.x= element_text(size=20))
+p <- p + theme(axis.text.y= element_text(size=20))
+p <- p + theme(axis.title.y = element_text(size = 22, angle = 90))
+p <- p + theme(axis.title.x = element_text(size = 22, angle = 00))
 p <- p + theme(legend.position = c(0.92, .85))
 # p <- p + scale_x_discrete(labels=paste(Pos))
 p
@@ -403,6 +403,7 @@ mutation.plot <- mutation.plot + coord_flip() + theme(legend.position = c(0.5,0.
 mutation.plot
 
 ggsave(filename = "figures/mutation_rates_within_and_downstream.pdf",plot = mutation.plot)
+ggsave(filename = "figures/mutation_rates_within_and_downstream.png",plot = mutation.plot)
 
 
 # Figure: sum of mutation rates -----
@@ -416,11 +417,14 @@ plot.sum.df$Name <- factor(plot.sum.df$Name, levels=c("Downstream of KRAS","With
 plot.sum.df[1,"mu"] <- sum(rates.data.frame[1:5,"mu"],rates.data.frame[9:10,"mu"])
 plot.sum.df[2,"mu"] <- sum(rates.data.frame[11:23,"mu"])
 
-plot.sum <- ggplot(data = plot.sum.df,aes(x=Name,y=mu)) + geom_bar(stat = "identity") + scale_y_continuous(labels=fancy_scientific) + labs(y="Mutation rate from tumorigenesis to resection",x="Mutations") + theme(panel.background = element_blank()) + theme(axis.line = element_line(colour = "black")) + theme(panel.grid.major = element_line(colour = "lightgray"), panel.grid.minor = element_line(colour = "lightgray")) + theme(axis.text.y=element_text(size=20,angle=90,hjust = 0.5), axis.title = element_text(size=20), axis.text.x=element_text(size=30))
+plot.sum <- ggplot(data = plot.sum.df,aes(x=Name,y=mu)) + geom_bar(stat = "identity") + scale_y_continuous(labels=fancy_scientific) + labs(y="Mutation rate",x="Mutations") + theme(panel.background = element_blank()) + theme(axis.line = element_line(colour = "black")) + theme(panel.grid.major = element_line(colour = "lightgray"), panel.grid.minor = element_line(colour = "lightgray")) + theme(axis.text.y=element_text(size=40,angle=45,hjust = 0.5), axis.title = element_text(size=40), axis.text.x=element_text(size=30))
 plot.sum <- plot.sum + coord_flip()
 plot.sum
 
 ggsave(filename = "figures/mutation_rates_sum.pdf",plot = plot.sum)
+
+
+ggsave(filename = "figures/mutation_rates_sum.png",plot = plot.sum)
 
 
 
@@ -560,7 +564,7 @@ grid.arrange(gg1,gg.mid,gg2,ncol=3,widths=c(4.25/10,1/10,4.25/10))
 gg.combined <- arrangeGrob(gg1,gg.mid,gg2,ncol=3,widths=c(4/10,1.5/10,4/10))
 ggsave(gg.combined, filename = "figures/combined_mu_selection_plot_titles.pdf",units = "in",height=7,width = 10)
 
-
+ggsave(gg.combined, filename = "figures/combined_mu_selection_plot_titles.png",units = "in",height=7,width = 10)
 
 
 
